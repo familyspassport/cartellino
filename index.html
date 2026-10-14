@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@600&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
-/* Layout: una colonna centrata, tre schede (Cerca / Aggiungi / Tutti) */
+/* Layout: one centred column, three tabs (Search / Add / All) */
 :root{
   --bg:#f3f5f4; --surface:#ffffff; --ink:#17201f; --muted:#5d6b69; --line:#d8dfdd;
   --accent:#0f5c5a; --accent-ink:#ffffff; --tag:#f6e9c9; --tag-ink:#3b2f12; --danger:#b3261e;
@@ -42,7 +42,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 .hint{color:var(--muted);font-size:14px;margin:6px 2px 0}
 .result{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
 @media (max-width:620px){.result{grid-template-columns:1fr}}
-.result img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;background:var(--bg)}
+.gallery{display:flex;flex-direction:column;gap:8px;min-width:0}
+.gallery .main{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;background:var(--bg)}
+.thumbs{display:flex;gap:8px}
+.thumbs button{padding:0;border:2px solid transparent;border-radius:8px;background:none;cursor:pointer;width:72px;overflow:hidden}
+.thumbs button[aria-pressed="true"]{border-color:var(--accent)}
+.thumbs img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover}
 .info{display:flex;flex-direction:column;gap:12px;min-width:0}
 .tag{align-self:flex-start;font:600 26px var(--mono);letter-spacing:.06em;background:var(--tag);color:var(--tag-ink);padding:6px 16px 6px 26px;border-radius:4px 10px 10px 4px;position:relative}
 .tag::before{content:"";position:absolute;left:9px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--surface)}
@@ -57,8 +62,12 @@ label{font-weight:600;font-size:14px;display:flex;flex-direction:column;gap:6px}
 input[type=text],input[type=email],input[type=password],textarea{font:16px var(--body);padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);width:100%}
 #f-code{font:600 20px var(--mono);text-transform:uppercase;letter-spacing:.05em}
 textarea{min-height:80px;resize:vertical}
-.photo{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--line);border-radius:12px;min-height:180px;cursor:pointer;color:var(--muted);text-align:center;padding:12px;overflow:hidden;position:relative}
-.photo img{max-height:320px;border-radius:8px}
+.photos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.slot{display:flex;flex-direction:column;gap:6px;min-width:0}
+.slot-title{font-weight:600;font-size:14px}
+.slot-title small{color:var(--muted);font-weight:400}
+.photo{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--line);border-radius:12px;min-height:180px;cursor:pointer;color:var(--muted);text-align:center;padding:10px;overflow:hidden;position:relative;font-weight:400}
+.photo img{max-height:260px;border-radius:8px}
 .photo input{position:absolute;width:1px;height:1px;opacity:0}
 .btn{font:600 16px var(--body);border:0;border-radius:10px;padding:14px 18px;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
 .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
@@ -67,9 +76,10 @@ textarea{min-height:80px;resize:vertical}
 .msg{font-size:14px;margin:0}
 .msg.err{color:var(--danger)} .msg.ok{color:var(--accent)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;text-align:left;padding:0;color:inherit;font:inherit}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;text-align:left;padding:0;color:inherit;font:inherit;position:relative}
 .card img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:var(--bg)}
 .card span{display:block;font:600 15px var(--mono);letter-spacing:.04em;padding:8px 10px}
+.card .n{position:absolute;top:6px;right:6px;background:var(--surface);color:var(--ink);font:600 12px var(--body);padding:2px 7px;border-radius:999px}
 .count{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
 .confirm{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .who{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:14px}
@@ -80,50 +90,59 @@ textarea{min-height:80px;resize:vertical}
 <div class="wrap">
   <header>
     <h1>Cartellino</h1>
-    <p class="sub" id="status">Caricamento…</p>
+    <p class="sub" id="status">Loading…</p>
   </header>
 
   <nav class="tabs" role="tablist">
-    <button role="tab" aria-selected="true" data-tab="cerca">Cerca</button>
-    <button role="tab" aria-selected="false" data-tab="aggiungi">Aggiungi</button>
-    <button role="tab" aria-selected="false" data-tab="tutti">Tutti</button>
+    <button role="tab" aria-selected="true" data-tab="cerca">Search</button>
+    <button role="tab" aria-selected="false" data-tab="aggiungi">Add</button>
+    <button role="tab" aria-selected="false" data-tab="tutti">All</button>
   </nav>
 
   <section id="p-cerca">
     <div class="search">
-      <input id="q" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Scrivi il codice del vestito">
-      <p class="hint">Il vestito appare appena il codice corrisponde.</p>
+      <input id="q" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Type the item code">
+      <p class="hint">The item appears as soon as the code matches.</p>
     </div>
     <div id="out" style="margin-top:16px"></div>
   </section>
 
   <section id="p-aggiungi" hidden>
     <form id="login">
-      <strong style="font-family:var(--display);font-size:20px">Accesso negozio</strong>
-      <p class="hint" style="margin:0">Serve per aggiungere o eliminare vestiti. La ricerca è libera.</p>
+      <strong style="font-family:var(--display);font-size:20px">Staff sign-in</strong>
+      <p class="hint" style="margin:0">Needed to add or delete items. Searching is open to everyone.</p>
       <label for="l-email">Email<input id="l-email" type="email" autocomplete="username" required></label>
       <label for="l-pass">Password<input id="l-pass" type="password" autocomplete="current-password" required></label>
-      <button class="btn" type="submit" id="l-btn">Entra</button>
+      <button class="btn" type="submit" id="l-btn">Sign in</button>
       <p class="msg" id="l-msg" role="status"></p>
     </form>
 
     <div id="add-area" hidden style="display:flex;flex-direction:column;gap:12px">
-      <div class="who"><span id="who"></span><button class="link" id="logout" type="button">Esci</button></div>
+      <div class="who"><span id="who"></span><button class="link" id="logout" type="button">Sign out</button></div>
       <form id="f">
-        <label for="f-code">Codice
+        <label for="f-code">Code
           <span class="row">
-            <input id="f-code" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Es. V0001" required>
-            <button type="button" class="btn ghost" id="gen">Prossimo libero</button>
+            <input id="f-code" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="e.g. V0001" required>
+            <button type="button" class="btn ghost" id="gen">Next free</button>
           </span>
         </label>
-        <label class="photo" for="f-photo">
-          <span id="photo-label">Tocca per scattare o scegliere la foto</span>
-          <input id="f-photo" type="file" accept="image/*" capture="environment">
+        <div class="photos">
+          <div class="slot">
+            <span class="slot-title">Photo 1 <small>(required)</small></span>
+            <label class="photo" for="f-photo1"><span id="lab1">Tap to take or choose a photo</span>
+              <input id="f-photo1" type="file" accept="image/*" capture="environment"></label>
+          </div>
+          <div class="slot">
+            <span class="slot-title">Photo 2 <small>(optional)</small></span>
+            <label class="photo" for="f-photo2"><span id="lab2">Tap to add a second photo</span>
+              <input id="f-photo2" type="file" accept="image/*" capture="environment"></label>
+            <button type="button" class="link" id="rm2" hidden>Remove photo 2</button>
+          </div>
+        </div>
+        <label for="f-note">Description (optional)
+          <textarea id="f-note" placeholder="e.g. Blue linen dress, size M, $89"></textarea>
         </label>
-        <label for="f-note">Descrizione (facoltativa)
-          <textarea id="f-note" placeholder="Es. Abito lino blu, taglia M, € 89"></textarea>
-        </label>
-        <button class="btn" id="save" type="submit">Salva vestito</button>
+        <button class="btn" id="save" type="submit">Save item</button>
         <p class="msg" id="f-msg" role="status"></p>
       </form>
     </div>
@@ -136,20 +155,24 @@ textarea{min-height:80px;resize:vertical}
 </div>
 
 <script>
-// ===== CONFIGURAZIONE: incolla qui i dati del tuo progetto Supabase =====
+// ===== CONFIG =====
 const SUPABASE_URL = "https://znkchlvusjaogrvlbutl.supabase.co";
 const SUPABASE_KEY = "sb_publishable_wKneTAKEr7ctUZ10RZdm9g_6JOOPbg4";
-// =========================================================================
+// ==================
 
 const BUCKET = "foto";
+const PH1 = "Tap to take or choose a photo", PH2 = "Tap to add a second photo";
 const $ = s => document.querySelector(s);
-let sb = null, items = [], session = null, photoBlob = null, photoUrl = null;
+let sb = null, items = [], session = null;
+const photos = [null, null];   // resized blobs for slot 1 and 2
+const previews = [null, null];
 
 const norm = s => (s||"").toUpperCase().replace(/\s+/g,"").replace(/[^A-Z0-9_.\-]/g,"");
-const imgSrc = it => sb.storage.from(BUCKET).getPublicUrl(it.photo_path).data.publicUrl;
-const fmtDate = d => d ? new Date(d).toLocaleDateString("it-IT",{day:"numeric",month:"short",year:"numeric"}) : "";
+const urlOf = path => sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+const pathsOf = it => [it.photo_path, it.photo_path2].filter(Boolean);
+const fmtDate = d => d ? new Date(d).toLocaleDateString("en-AU",{day:"numeric",month:"short",year:"numeric"}) : "";
 
-// ---- Schede
+// ---- Tabs
 document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => show(b.dataset.tab)));
 function show(t){
   document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab===t));
@@ -157,58 +180,73 @@ function show(t){
   if(t==="cerca") setTimeout(()=>$("#q").focus(),0);
 }
 
-// ---- Ricerca
+// ---- Search
 $("#q").addEventListener("input", renderSearch);
 function renderSearch(){
   const q = norm($("#q").value), out = $("#out");
   out.textContent = "";
-  if(!q){ out.append(emptyBox(items.length ? "Scrivi un codice" : "Archivio vuoto", items.length ? `${items.length} vestiti in archivio.` : "Aggiungi il primo vestito dalla scheda Aggiungi.")); return; }
+  if(!q){ out.append(emptyBox(items.length ? "Type a code" : "No items yet", items.length ? `${items.length} items in stock.` : "Add the first item from the Add tab.")); return; }
   const exact = items.find(i => i.code === q);
   if(exact){ out.append(detail(exact)); return; }
   const partial = items.filter(i => i.code.includes(q)).slice(0,24);
   if(partial.length){
-    const p = document.createElement("p"); p.className="hint"; p.textContent = "Nessun codice esatto. Forse cercavi:";
+    const p = document.createElement("p"); p.className="hint"; p.textContent = "No exact match. Did you mean:";
     out.append(p, gridOf(partial));
-  } else out.append(emptyBox("Codice non trovato", `Nessun vestito con codice ${q}.`));
+  } else out.append(emptyBox("Code not found", `No item with code ${q}.`));
 }
 function emptyBox(t, s){ const d=document.createElement("div"); d.className="empty"; const b=document.createElement("strong"); b.textContent=t; d.append(b, s); return d; }
 
 function detail(it){
   const d = document.createElement("article"); d.className="result";
-  const img = document.createElement("img"); img.alt = "Foto vestito " + it.code; img.src = imgSrc(it);
+  const gal = document.createElement("div"); gal.className="gallery";
+  const paths = pathsOf(it);
+  const main = document.createElement("img"); main.className="main"; main.alt = "Item " + it.code; main.src = urlOf(paths[0]);
+  gal.append(main);
+  if(paths.length > 1){
+    const th = document.createElement("div"); th.className="thumbs";
+    paths.forEach((p, i) => {
+      const b = document.createElement("button"); b.type="button"; b.setAttribute("aria-pressed", i===0); b.setAttribute("aria-label", "Photo " + (i+1));
+      const im = document.createElement("img"); im.src = urlOf(p); im.alt = "";
+      b.append(im);
+      b.onclick = () => { main.src = urlOf(p); th.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x===b)); };
+      th.append(b);
+    });
+    gal.append(th);
+  }
   const info = document.createElement("div"); info.className="info";
   const tag = document.createElement("div"); tag.className="tag"; tag.textContent = it.code;
-  const note = document.createElement("div"); note.className="note"; note.textContent = it.note || "Nessuna descrizione.";
-  const meta = document.createElement("div"); meta.className="meta"; meta.textContent = "Aggiunto il " + fmtDate(it.created_at);
+  const note = document.createElement("div"); note.className="note"; note.textContent = it.note || "No description.";
+  const meta = document.createElement("div"); meta.className="meta"; meta.textContent = "Added " + fmtDate(it.created_at);
   info.append(tag, note, meta);
   if(session){
-    const del = document.createElement("button"); del.className="btn ghost"; del.textContent="Elimina vestito";
+    const del = document.createElement("button"); del.className="btn ghost"; del.textContent="Delete item";
     del.onclick = () => {
       const c = document.createElement("div"); c.className="confirm";
-      const yes = document.createElement("button"); yes.className="btn danger"; yes.textContent="Sì, elimina " + it.code;
-      const no = document.createElement("button"); no.className="btn ghost"; no.textContent="Annulla";
+      const yes = document.createElement("button"); yes.className="btn danger"; yes.textContent="Yes, delete " + it.code;
+      const no = document.createElement("button"); no.className="btn ghost"; no.textContent="Cancel";
       no.onclick = () => c.replaceWith(del);
       yes.onclick = async () => {
         yes.disabled = true;
         const { error } = await sb.from("vestiti").delete().eq("code", it.code);
-        if(error){ yes.disabled=false; yes.textContent="Errore, riprova"; return; }
-        await sb.storage.from(BUCKET).remove([it.photo_path]);
+        if(error){ yes.disabled=false; yes.textContent="Error, try again"; return; }
+        await sb.storage.from(BUCKET).remove(paths);
         await load();
       };
       c.append(yes, no); del.replaceWith(c);
     };
     info.append(del);
   }
-  d.append(img, info); return d;
+  d.append(gal, info); return d;
 }
 
 function gridOf(list){
   const g = document.createElement("div"); g.className="grid";
   list.forEach(it => {
     const c = document.createElement("button"); c.className="card"; c.type="button";
-    const img = document.createElement("img"); img.alt=""; img.loading="lazy"; img.src = imgSrc(it);
+    const img = document.createElement("img"); img.alt=""; img.loading="lazy"; img.src = urlOf(it.photo_path);
     const s = document.createElement("span"); s.textContent = it.code;
     c.append(img, s);
+    if(it.photo_path2){ const n = document.createElement("i"); n.className="n"; n.textContent = "2 photos"; c.append(n); }
     c.onclick = () => { $("#q").value = it.code; show("cerca"); renderSearch(); };
     g.append(c);
   });
@@ -216,55 +254,63 @@ function gridOf(list){
 }
 
 function renderAll(){
-  $("#count").textContent = items.length ? `${items.length} vestiti, dal più recente` : "";
-  const next = items.length ? gridOf(items) : emptyBox("Nessun vestito ancora","Usa la scheda Aggiungi per inserire il primo.");
+  $("#count").textContent = items.length ? `${items.length} items, newest first` : "";
+  const next = items.length ? gridOf(items) : emptyBox("No items yet","Use the Add tab to add the first one.");
   next.id = "grid"; $("#grid").replaceWith(next);
 }
 
-// ---- Caricamento dati (all'avvio, quando torni sulla pagina e ogni minuto)
+// ---- Data (on start, when you come back to the page, and every minute)
 async function load(){
   const all = []; let from = 0;
   while(true){
     const { data, error } = await sb.from("vestiti").select("*").order("created_at",{ascending:false}).range(from, from+999);
-    if(error){ $("#status").textContent = "Archivio non raggiungibile. Controlla la connessione."; return; }
+    if(error){ $("#status").textContent = "Can't reach the database. Check your connection."; return; }
     all.push(...data); if(data.length < 1000) break; from += 1000;
   }
   items = all;
-  $("#status").textContent = `${items.length} vestiti in archivio`;
+  $("#status").textContent = `${items.length} items in stock`;
   renderSearch(); renderAll();
 }
 
-// ---- Accesso
+// ---- Sign-in
 function setSession(s){
   session = s;
   $("#login").hidden = !!s;
   $("#add-area").hidden = !s;
-  $("#who").textContent = s ? "Connesso come " + s.user.email : "";
+  $("#who").textContent = s ? "Signed in as " + s.user.email : "";
   renderSearch();
 }
 $("#login").addEventListener("submit", async e => {
   e.preventDefault();
-  const btn = $("#l-btn"); btn.disabled = true; $("#l-msg").textContent = "Accesso…"; $("#l-msg").className = "msg";
+  const btn = $("#l-btn"); btn.disabled = true; $("#l-msg").textContent = "Signing in…"; $("#l-msg").className = "msg";
   const { error } = await sb.auth.signInWithPassword({ email: $("#l-email").value.trim(), password: $("#l-pass").value });
   btn.disabled = false;
-  if(error){ $("#l-msg").textContent = "Email o password errate."; $("#l-msg").className = "msg err"; }
+  if(error){ $("#l-msg").textContent = "Wrong email or password."; $("#l-msg").className = "msg err"; }
   else { $("#l-msg").textContent = ""; $("#l-pass").value = ""; }
 });
 $("#logout").onclick = () => sb.auth.signOut();
 
-// ---- Foto: ridimensiona a max 1400px JPEG
-$("#f-photo").addEventListener("change", async e => {
-  const f = e.target.files && e.target.files[0]; if(!f) return;
-  try{
-    photoBlob = await shrink(f);
-    if(photoUrl) URL.revokeObjectURL(photoUrl);
-    photoUrl = URL.createObjectURL(photoBlob);
-    const lab = $("#photo-label"); lab.textContent = "";
-    const im = document.createElement("img"); im.src = photoUrl; im.alt = "Anteprima";
-    const t = document.createElement("span"); t.textContent = "Tocca per cambiare foto";
+// ---- Photos: resize to max 1400px JPEG
+function setSlot(i, blob){
+  photos[i] = blob;
+  if(previews[i]) URL.revokeObjectURL(previews[i]);
+  previews[i] = blob ? URL.createObjectURL(blob) : null;
+  const lab = $("#lab" + (i+1)); lab.textContent = "";
+  if(blob){
+    const im = document.createElement("img"); im.src = previews[i]; im.alt = "Preview";
+    const t = document.createElement("span"); t.textContent = "Tap to change";
     lab.append(im, t);
-  }catch(err){ msg("Questa foto non si apre. Prova con un'altra immagine.", "err"); }
-});
+  } else lab.textContent = i === 0 ? PH1 : PH2;
+  if(i === 1) $("#rm2").hidden = !blob;
+}
+[0,1].forEach(i => $("#f-photo" + (i+1)).addEventListener("change", async e => {
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  try{ setSlot(i, await shrink(f)); }
+  catch(err){ msg("This photo can't be opened. Try another image.", "err"); }
+  e.target.value = "";
+}));
+$("#rm2").onclick = () => setSlot(1, null);
+
 function shrink(file){
   return new Promise((res, rej) => {
     const url = URL.createObjectURL(file), im = new Image();
@@ -290,34 +336,42 @@ function msg(t, k){ const m=$("#f-msg"); m.textContent=t; m.className="msg "+(k|
 $("#f").addEventListener("submit", async e => {
   e.preventDefault();
   const code = norm($("#f-code").value);
-  if(!code){ msg("Inserisci un codice (lettere, numeri, - _ .).", "err"); return; }
-  if(!photoBlob){ msg("Aggiungi la foto del vestito.", "err"); return; }
-  const btn = $("#save"); btn.disabled = true; msg("Salvataggio…");
+  if(!code){ msg("Enter a code (letters, numbers, - _ .).", "err"); return; }
+  if(!photos[0]){ msg("Add photo 1 of the item.", "err"); return; }
+  const btn = $("#save"); btn.disabled = true; msg("Saving…");
+  const uploaded = [];
   try{
     const { data: ex } = await sb.from("vestiti").select("code").eq("code", code).maybeSingle();
-    if(ex){ msg(`Il codice ${code} è già usato. Scegline un altro.`, "err"); return; }
-    const path = `${code}-${Date.now()}.jpg`;
-    const up = await sb.storage.from(BUCKET).upload(path, photoBlob, { contentType: "image/jpeg" });
-    if(up.error) throw up.error;
-    const ins = await sb.from("vestiti").insert({ code, photo_path: path, note: $("#f-note").value.trim() });
+    if(ex){ msg(`Code ${code} is already used. Choose another one.`, "err"); return; }
+    const stamp = Date.now();
+    for(const [i, blob] of photos.entries()){
+      if(!blob) continue;
+      const path = `${code}-${stamp}-${i+1}.jpg`;
+      const up = await sb.storage.from(BUCKET).upload(path, blob, { contentType: "image/jpeg" });
+      if(up.error) throw up.error;
+      uploaded.push(path);
+    }
+    const row = { code, photo_path: uploaded[0], note: $("#f-note").value.trim() };
+    if(uploaded[1]) row.photo_path2 = uploaded[1];
+    const ins = await sb.from("vestiti").insert(row);
     if(ins.error){
-      await sb.storage.from(BUCKET).remove([path]);
-      if(ins.error.code === "23505"){ msg(`Il codice ${code} è già usato. Scegline un altro.`, "err"); return; }
+      if(ins.error.code === "23505"){ await sb.storage.from(BUCKET).remove(uploaded); msg(`Code ${code} is already used. Choose another one.`, "err"); return; }
       throw ins.error;
     }
-    msg(`Salvato: ${code}`, "ok");
-    $("#f").reset(); photoBlob = null; $("#photo-label").textContent = "Tocca per scattare o scegliere la foto";
+    msg(`Saved: ${code}`, "ok");
+    $("#f").reset(); setSlot(0, null); setSlot(1, null);
     await load();
   }catch(err){
-    msg("Salvataggio non riuscito. Controlla la connessione e riprova.", "err");
+    if(uploaded.length) await sb.storage.from(BUCKET).remove(uploaded);
+    msg("Couldn't save. Check your connection and try again.", "err");
     console.error(err);
   }finally{ btn.disabled = false; }
 });
 
-// ---- Avvio
+// ---- Start
 renderSearch(); renderAll();
-if(!window.supabase || SUPABASE_KEY.startsWith("INCOLLA")){
-  $("#status").textContent = window.supabase ? "Manca la chiave Supabase nel file." : "Libreria non caricata. Controlla la connessione.";
+if(!window.supabase || SUPABASE_KEY.startsWith("PASTE")){
+  $("#status").textContent = window.supabase ? "Supabase key missing in the file." : "Library didn't load. Check your connection.";
 } else {
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   sb.auth.getSession().then(({ data }) => setSession(data.session));
