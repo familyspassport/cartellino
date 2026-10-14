@@ -66,9 +66,10 @@ textarea{min-height:80px;resize:vertical}
 .slot{display:flex;flex-direction:column;gap:6px;min-width:0}
 .slot-title{font-weight:600;font-size:14px}
 .slot-title small{color:var(--muted);font-weight:400}
-.photo{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--line);border-radius:12px;min-height:180px;cursor:pointer;color:var(--muted);text-align:center;padding:10px;overflow:hidden;position:relative;font-weight:400}
+.photo{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--line);border-radius:12px;min-height:160px;color:var(--muted);text-align:center;padding:10px;overflow:hidden;position:relative;font-weight:400}
 .photo img{max-height:260px;border-radius:8px}
-.photo input{position:absolute;width:1px;height:1px;opacity:0}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pick .btn{padding:10px 6px;font-size:14px}
 .btn{font:600 16px var(--body);border:0;border-radius:10px;padding:14px 18px;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
 .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
 .btn.danger{background:var(--danger);color:var(--surface)}
@@ -129,15 +130,23 @@ textarea{min-height:80px;resize:vertical}
         <div class="photos">
           <div class="slot">
             <span class="slot-title">Photo 1 <small>(required)</small></span>
-            <label class="photo" for="f-photo1"><span id="lab1">Tap to take or choose a photo</span>
-              <input id="f-photo1" type="file" accept="image/*" capture="environment"></label>
+            <div class="photo" data-slot="0"><span id="lab1">No photo yet</span></div>
+            <div class="pick">
+              <button type="button" class="btn ghost" data-pick="cam" data-slot="0">Camera</button>
+              <button type="button" class="btn ghost" data-pick="gal" data-slot="0">Gallery</button>
+            </div>
           </div>
           <div class="slot">
             <span class="slot-title">Photo 2 <small>(optional)</small></span>
-            <label class="photo" for="f-photo2"><span id="lab2">Tap to add a second photo</span>
-              <input id="f-photo2" type="file" accept="image/*" capture="environment"></label>
+            <div class="photo" data-slot="1"><span id="lab2">No photo yet</span></div>
+            <div class="pick">
+              <button type="button" class="btn ghost" data-pick="cam" data-slot="1">Camera</button>
+              <button type="button" class="btn ghost" data-pick="gal" data-slot="1">Gallery</button>
+            </div>
             <button type="button" class="link" id="rm2" hidden>Remove photo 2</button>
           </div>
+          <input id="in-cam" type="file" accept="image/*" capture="environment" hidden>
+          <input id="in-gal" type="file" accept="image/*" hidden>
         </div>
         <label for="f-note">Description (optional)
           <textarea id="f-note" placeholder="e.g. Blue linen dress, size M, $89"></textarea>
@@ -161,7 +170,7 @@ const SUPABASE_KEY = "sb_publishable_wKneTAKEr7ctUZ10RZdm9g_6JOOPbg4";
 // ==================
 
 const BUCKET = "foto";
-const PH1 = "Tap to take or choose a photo", PH2 = "Tap to add a second photo";
+const PH1 = "No photo yet", PH2 = "No photo yet";
 const $ = s => document.querySelector(s);
 let sb = null, items = [], session = null;
 const photos = [null, null];   // resized blobs for slot 1 and 2
@@ -298,14 +307,18 @@ function setSlot(i, blob){
   const lab = $("#lab" + (i+1)); lab.textContent = "";
   if(blob){
     const im = document.createElement("img"); im.src = previews[i]; im.alt = "Preview";
-    const t = document.createElement("span"); t.textContent = "Tap to change";
-    lab.append(im, t);
+    lab.append(im);
   } else lab.textContent = i === 0 ? PH1 : PH2;
   if(i === 1) $("#rm2").hidden = !blob;
 }
-[0,1].forEach(i => $("#f-photo" + (i+1)).addEventListener("change", async e => {
+let pickSlot = 0;
+document.querySelectorAll("[data-pick]").forEach(b => b.addEventListener("click", () => {
+  pickSlot = +b.dataset.slot;
+  $(b.dataset.pick === "cam" ? "#in-cam" : "#in-gal").click();
+}));
+["#in-cam","#in-gal"].forEach(id => $(id).addEventListener("change", async e => {
   const f = e.target.files && e.target.files[0]; if(!f) return;
-  try{ setSlot(i, await shrink(f)); }
+  try{ setSlot(pickSlot, await shrink(f)); }
   catch(err){ msg("This photo can't be opened. Try another image.", "err"); }
   e.target.value = "";
 }));
